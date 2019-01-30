@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:chat_sotatek/home_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -30,7 +31,26 @@ class _LoginPageState extends State<LoginScreen> {
       idToken: googleAuth.idToken,
     );
     final FirebaseUser user = await _auth.signInWithCredential(credential);
-    Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen(message: message,)));
+    if (user != null) {
+      print(user);
+      final QuerySnapshot userQuery = await Firestore.instance
+          .collection('users')
+          .where('id', isEqualTo: user.uid)
+          .getDocuments();
+      final List<DocumentSnapshot> documents = userQuery.documents;
+      print(documents);
+      if (documents.length == 0) {
+        Firestore.instance.collection('users').document(user.uid).setData(
+            {'nickname': user.displayName, 'photoUrl': user.photoUrl, 'id': user.uid});
+      }
+    }
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => HomeScreen(
+                  message: message,
+                )));
+    return user;
   }
 
   @override
@@ -45,7 +65,7 @@ class _LoginPageState extends State<LoginScreen> {
           child: Text(titleButton),
           color: Colors.red,
           textColor: Colors.white,
-          onPressed: (){
+          onPressed: () {
             _handleSignIn(context);
           },
         ),
