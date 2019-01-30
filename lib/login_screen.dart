@@ -44,11 +44,11 @@ class _LoginPageState extends State<LoginScreen> {
             {'nickname': user.displayName, 'photoUrl': user.photoUrl, 'id': user.uid});
       }
     }
-    Navigator.push(
+    Navigator.pushReplacement(
         context,
         MaterialPageRoute(
             builder: (context) => HomeScreen(
-                  message: message,
+                  currentUserId: user.uid,
                 )));
     return user;
   }
