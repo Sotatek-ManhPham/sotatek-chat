@@ -1,35 +1,35 @@
 {
   "project_info": {
-    "project_number": "42688215496",
-    "firebase_url": "https://sotatek-chat.firebaseio.com",
-    "project_id": "sotatek-chat",
-    "storage_bucket": "sotatek-chat.appspot.com"
+    "project_number": "600252600032",
+    "firebase_url": "https://sotatekchatapp.firebaseio.com",
+    "project_id": "sotatekchatapp",
+    "storage_bucket": "sotatekchatapp.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:42688215496:android:90f804ddb3f72f43",
+        "mobilesdk_app_id": "1:600252600032:android:90f804ddb3f72f43",
         "android_client_info": {
           "package_name": "com.example.chatsotatek"
         }
       },
       "oauth_client": [
         {
-          "client_id": "42688215496-imquuv2a5aql5q7m4kotbmjs72ue6kmq.apps.googleusercontent.com",
+          "client_id": "600252600032-ci8bd9794pdirj4nfoofdcbk5ornv5tc.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.chatsotatek",
-            "certificate_hash": "5b038d750e7088055619f867f545c689599dd249"
+            "certificate_hash": "76718e575f2cd508826e1d31216413f301b0418b"
           }
         },
         {
-          "client_id": "42688215496-s4cocr590idnu08rl90etahuok1h06cj.apps.googleusercontent.com",
+          "client_id": "600252600032-djegfrb1fg0velvahip7jd8tc3acu9cj.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyD2-agu0B1fr_XkYe1mL-8xV2jEAZf447M"
+          "current_key": "AIzaSyB2ZzxYgMgK4_C2LWlJQtsCoTze3fZhCO4"
         }
       ],
       "services": {
@@ -40,15 +40,8 @@
           "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "42688215496-s4cocr590idnu08rl90etahuok1h06cj.apps.googleusercontent.com",
+              "client_id": "600252600032-djegfrb1fg0velvahip7jd8tc3acu9cj.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "42688215496-ubud6j108j0d4q794h5dagruvd23gtoh.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.chatSotatek"
-              }
             }
           ]
         },
