@@ -29,7 +29,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String peerId;
   String peerAvatarUrl;
-  String id;
 
   _ChatScreenState({
     Key key,
@@ -59,19 +58,37 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void onSendMessage(String content, int type) {
+  void onSendMessage(String content, String type) {
     if (content.trim() != '') {
       textEditingController.clear();
-      var documentReference = Firestore.instance
+      var documentCurrentUser = Firestore.instance
           .collection('messages')
           .document(groupChatId)
           .collection('message')
           .document(DateTime.now().millisecondsSinceEpoch.toString());
 
+      String groundChatPeerId = '$peerId-$currentUserId';
+
+      var documentPeer = Firestore.instance
+          .collection('messages')
+          .document(groundChatPeerId)
+          .collection('message')
+          .document(DateTime.now().millisecondsSinceEpoch.toString());
+
       Firestore.instance.runTransaction((transaction) async {
-        await transaction.set(documentReference, {
+        await transaction.set(documentCurrentUser, {
           'content': content,
-          'idFrom': id,
+          'idFrom': currentUserId,
+          'idTo': peerId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          'type': type
+        });
+      });
+
+      Firestore.instance.runTransaction((transaction) async {
+        await transaction.set(documentPeer, {
+          'content': content,
+          'idFrom': currentUserId,
           'idTo': peerId,
           'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
           'type': type
@@ -133,12 +150,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: Text(
                     document['content'],
                     style: TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
+                  width: 200.0,
                   padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                   decoration: BoxDecoration(
-                      color: Colors.grey,
+                      color: Colors.blue[600],
                       borderRadius: BorderRadius.circular(8.0)),
                 )
               : Text('image'),
@@ -175,9 +193,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Colors.black,
                     ),
                   ),
+                  width: 200.0,
                   padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                   decoration: BoxDecoration(
-                      color: Colors.grey,
+                      color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8.0)),
                 )
               : Text('image'),
@@ -187,35 +206,57 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget buildTextInput() {
-    return Container(
-      height: 48.0,
-      padding: EdgeInsets.all(8.0),
-      margin: EdgeInsets.all(16.0),
-      alignment: Alignment.center,
-      decoration: new BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.all(Radius.circular(25.0)),
-      ),
-      child: TextField(
-        style: TextStyle(color: Colors.black, fontSize: 15.0),
-        controller: textEditingController,
-        focusNode: focusNode,
-      ),
+    return Row(
+      children: <Widget>[
+        Flexible(
+            child: Container(
+          margin: EdgeInsets.all(8.0),
+          decoration: new BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+          ),
+          child: TextField(
+            decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.only(
+                    left: 16.0, top: 8.0, right: 16.0, bottom: 8.0)),
+            style: TextStyle(color: Colors.black, fontSize: 15.0),
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            controller: textEditingController,
+            focusNode: focusNode,
+          ),
+        )),
+        Container(
+          child: IconButton(
+            icon: Icon(
+              Icons.send,
+              color: Colors.blue,
+            ),
+            color: Colors.blue,
+            onPressed: () {
+              onSendMessage(textEditingController.text, 'text');
+            },
+          ),
+        )
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Chat"),
-          centerTitle: true,
-        ),
-        body: Column(
-          children: <Widget>[
-            buidListMessage(),
-            buildTextInput(),
-          ],
-        ));
+      appBar: AppBar(
+        title: Text("Chat"),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: <Widget>[
+          buidListMessage(),
+          buildTextInput(),
+        ],
+      ),
+      backgroundColor: Colors.white,
+    );
   }
 }
