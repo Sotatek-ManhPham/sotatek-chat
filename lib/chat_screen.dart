@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 
 class ChatScreen extends StatefulWidget {
   final String peerId;
@@ -208,8 +209,27 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget buildTextInput() {
     return Row(
       children: <Widget>[
+        Container(
+          child: IconButton(
+              icon: Icon(
+                Icons.camera_alt,
+                color: Colors.blue,
+              ),
+              onPressed: null),
+        ),
+        Container(
+          child: IconButton(
+              icon: Icon(
+                Icons.image,
+                color: Colors.blue,
+              ),
+              onPressed: () {
+                buildAlbumImage();
+              }),
+        ),
         Flexible(
             child: Container(
+          padding: EdgeInsets.only(left: 16.0),
           margin: EdgeInsets.all(8.0),
           decoration: new BoxDecoration(
             color: Colors.grey[200],
@@ -217,9 +237,16 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           child: TextField(
             decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.only(
-                    left: 16.0, top: 8.0, right: 16.0, bottom: 8.0)),
+              suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.insert_emoticon,
+                    color: Colors.blue,
+                  ),
+                  onPressed: () {
+                    buildTickets();
+                  }),
+              border: InputBorder.none,
+            ),
             style: TextStyle(color: Colors.black, fontSize: 15.0),
             maxLines: null,
             keyboardType: TextInputType.multiline,
@@ -259,4 +286,8 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: Colors.white,
     );
   }
+
+  Widget buildTickets() {}
+
+  Widget buildAlbumImage() {}
 }
