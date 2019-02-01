@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:chat_sotatek/chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String currentUserId;
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        title: "Home",
         home: Scaffold(
             appBar: AppBar(
               title: Text("Home"),
@@ -61,7 +63,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(document['nickname']),
         subtitle: Text('You: Happy new year'),
+        onTap: (){
+          _showChat(document.documentID, document['photoUrl']);
+      },
       );
     }
   }
+
+  _showChat(String peerId, String avatarUrl) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(peerId: peerId, peerAvatarUrl: avatarUrl)));
+  }
 }
+
