@@ -27,6 +27,7 @@ dev_dependencies:
   firebase_auth:
   google_sign_in:
   cached_network_image: ^0.5.1
+  shared_preferences:
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 
