@@ -1,8 +1,12 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ChatScreen extends StatefulWidget {
   final String peerId;
@@ -30,6 +34,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String peerId;
   String peerAvatarUrl;
+  String imageUrl;
+  File imageFile;
 
   _ChatScreenState({
     Key key,
@@ -106,8 +112,27 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() {});
   }
 
+  Future getImage(ImageSource imageSource) async {
+    imageFile = await ImagePicker.pickImage(source: imageSource);
+    if (imageFile != null) {
+      uploadFile();
+    }
+  }
+
+  Future uploadFile() async {
+    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
+    StorageUploadTask uploadTask = reference.putFile(imageFile);
+    StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
+    storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
+      imageUrl = downloadUrl;
+      setState(() {
+        onSendMessage(imageUrl, IMAGE_MESSAGE_TYPE);
+      });
+    });
+  }
+
   Widget buidListMessage() {
-    print('groupChatId: ${groupChatId}');
     return Flexible(
         child: groupChatId == ''
             ? Center(child: CircularProgressIndicator())
@@ -125,7 +150,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     );
                   } else {
                     listMessage = snapshot.data.documents;
-                    print('List message: $listMessage');
                     return ListView.builder(
                       padding: EdgeInsets.all(10.0),
                       itemCount: listMessage.length,
@@ -139,9 +163,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget buildItem(int index, DocumentSnapshot document) {
-    print('idFrom: ${document['idFrom']}');
-    print('Current id: $currentUserId');
-    print('Chat current user: ${document['idFrom'] == currentUserId}');
     if (document['idFrom'] == currentUserId) {
       return Row(
         children: <Widget>[
@@ -160,7 +181,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Colors.blue[600],
                       borderRadius: BorderRadius.circular(8.0)),
                 )
-              : Text('image'),
+              : Container(
+                  margin: EdgeInsets.only(left: 16.0, top: 16.0, right: 16.0),
+                  child: CachedNetworkImage(
+                    imageUrl: document['content'],
+                    width: 200.0,
+                    height: 200.0,
+                    placeholder: CircularProgressIndicator(),
+                  ),
+                ),
           Material(
             child: CachedNetworkImage(
               imageUrl: photoUrlCurrentUser,
@@ -200,7 +229,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(8.0)),
                 )
-              : Text('image'),
+              : Container(
+                  margin: EdgeInsets.only(left: 16.0, top: 16.0, right: 16.0),
+                  child: CachedNetworkImage(
+                    imageUrl: document['content'],
+                    width: 200.0,
+                    height: 200.0,
+                    placeholder: CircularProgressIndicator(),
+                  ),
+                ),
         ],
       );
     }
@@ -215,7 +252,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 Icons.camera_alt,
                 color: Colors.blue,
               ),
-              onPressed: null),
+              onPressed: () {
+                getImage(ImageSource.camera);
+              }),
         ),
         Container(
           child: IconButton(
@@ -224,7 +263,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: Colors.blue,
               ),
               onPressed: () {
-                buildAlbumImage();
+                getImage(ImageSource.gallery);
               }),
         ),
         Flexible(
@@ -288,6 +327,4 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget buildTickets() {}
-
-  Widget buildAlbumImage() {}
 }
