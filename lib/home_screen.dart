@@ -1,7 +1,12 @@
+import 'package:chat_sotatek/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:chat_sotatek/chat_screen.dart';
+import 'package:chat_sotatek/login_screen.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class HomeScreen extends StatefulWidget {
   final String currentUserId;
@@ -16,6 +21,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final String currentUserId;
+  final GoogleSignIn googleSignIn = GoogleSignIn();
 
   _HomeScreenState({Key key, this.currentUserId});
 
@@ -23,10 +29,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: "Home",
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
             appBar: AppBar(
               title: Text("Home"),
               centerTitle: true,
+              actions: <Widget>[
+                IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: () {
+                    showSearch(context: context, delegate: SearchScreen());
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.exit_to_app),
+                  onPressed: _handleSignout,
+                ),
+              ],
             ),
             body: StreamBuilder(
               stream: Firestore.instance.collection('users').snapshots(),
@@ -46,6 +65,15 @@ class _HomeScreenState extends State<HomeScreen> {
             )));
   }
 
+  Future _handleSignout() async {
+    await FirebaseAuth.instance.signOut();
+    await googleSignIn.disconnect();
+    await googleSignIn.signOut();
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+            (Route<dynamic> route) => false);
+  }
+
   Widget buildItem(BuildContext context, document) {
     if (document['id'] == currentUserId) {
       return Container();
@@ -63,15 +91,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(document['nickname']),
         subtitle: Text('You: Happy new year'),
-        onTap: (){
+        onTap: () {
           _showChat(document.documentID, document['photoUrl']);
-      },
+        },
       );
     }
   }
 
   _showChat(String peerId, String avatarUrl) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(peerId: peerId, peerAvatarUrl: avatarUrl)));
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                ChatScreen(peerId: peerId, peerAvatarUrl: avatarUrl)));
   }
 }
-
