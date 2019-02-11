@@ -30,6 +30,7 @@ dev_dependencies:
   shared_preferences:
   image_picker: ^0.5.0
   firebase_storage: ^2.0.0
+  http:
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 
