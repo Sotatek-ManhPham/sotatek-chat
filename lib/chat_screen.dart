@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:convert';
+import 'package:chat_sotatek/emoji/emoticons.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +7,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:keyboard_visibility/keyboard_visibility.dart';
+
+var message = '', cursorPosition = 0;
 
 class ChatScreen extends StatefulWidget {
   final String peerId;
@@ -29,13 +32,22 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode focusNode = new FocusNode();
   final String TEXT_MESSAGE_TYPE = 'text';
   final String IMAGE_MESSAGE_TYPE = 'image';
-  final TextEditingController textEditingController =
-      new TextEditingController();
+  var textEditingController = new TextEditingController.fromValue(
+    new TextEditingValue(
+      text: message,
+      selection: new TextSelection.collapsed(
+        offset: cursorPosition,
+      ),
+    ),
+  );
 
   String peerId;
   String peerAvatarUrl;
   String imageUrl;
   File imageFile;
+
+  double marginBottomForEmojiKeyboard = 0;
+  bool isKeyboardShowing = false;
 
   _ChatScreenState({
     Key key,
@@ -49,12 +61,27 @@ class _ChatScreenState extends State<ChatScreen> {
   String groupChatId;
   String photoUrlCurrentUser;
   var listMessage;
+  var keyboardVisibilityNoti, keyboardVisibilityNotiId;
 
   @override
   void initState() {
     super.initState();
     focusNode.addListener(onFocusChange);
     readLocal();
+    keyboardVisibilityNoti = KeyboardVisibilityNotification();
+    keyboardVisibilityNotiId =
+        keyboardVisibilityNoti.addNewListener(onShow: () {
+      _hideEmojiChooser();
+      isKeyboardShowing = true;
+    }, onHide: () {
+      isKeyboardShowing = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    keyboardVisibilityNoti.removeListener(keyboardVisibilityNotiId);
+    super.dispose();
   }
 
   void onFocusChange() {
@@ -244,68 +271,70 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget buildTextInput() {
-    return Row(
-      children: <Widget>[
-        Container(
-          child: IconButton(
-              icon: Icon(
-                Icons.camera_alt,
-                color: Colors.blue,
-              ),
-              onPressed: () {
-                getImage(ImageSource.camera);
-              }),
-        ),
-        Container(
-          child: IconButton(
-              icon: Icon(
-                Icons.image,
-                color: Colors.blue,
-              ),
-              onPressed: () {
-                getImage(ImageSource.gallery);
-              }),
-        ),
-        Flexible(
-            child: Container(
-          padding: EdgeInsets.only(left: 16.0),
-          margin: EdgeInsets.all(8.0),
-          decoration: new BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.all(Radius.circular(25.0)),
+    return Container(
+      color: Colors.grey[200],
+      child: Row(
+        children: <Widget>[
+          Container(
+            child: IconButton(
+                icon: Icon(
+                  Icons.camera_alt,
+                  color: Colors.blue,
+                ),
+                onPressed: () {
+                  getImage(ImageSource.camera);
+                }),
           ),
-          child: TextField(
-            decoration: InputDecoration(
-              suffixIcon: IconButton(
+          Container(
+            child: IconButton(
+                icon: Icon(
+                  Icons.image,
+                  color: Colors.blue,
+                ),
+                onPressed: () {
+                  getImage(ImageSource.gallery);
+                }),
+          ),
+          Flexible(
+              child: Container(
+            padding: EdgeInsets.only(left: 16.0),
+            margin: EdgeInsets.all(8.0),
+            decoration: new BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.all(Radius.circular(25.0)),
+            ),
+            child: TextField(
+              decoration: InputDecoration(
+                suffixIcon: IconButton(
                   icon: Icon(
                     Icons.insert_emoticon,
                     color: Colors.blue,
                   ),
-                  onPressed: () {
-                    buildTickets();
-                  }),
-              border: InputBorder.none,
+                  onPressed: _toggleEmojiChooser,
+                ),
+                border: InputBorder.none,
+              ),
+              style: TextStyle(color: Colors.black, fontSize: 15.0),
+              maxLines: null,
+              keyboardType: TextInputType.multiline,
+              controller: textEditingController,
+              focusNode: focusNode,
             ),
-            style: TextStyle(color: Colors.black, fontSize: 15.0),
-            maxLines: null,
-            keyboardType: TextInputType.multiline,
-            controller: textEditingController,
-            focusNode: focusNode,
-          ),
-        )),
-        Container(
-          child: IconButton(
-            icon: Icon(
-              Icons.send,
+          )),
+          Container(
+            child: IconButton(
+              icon: Icon(
+                Icons.send,
+                color: Colors.blue,
+              ),
               color: Colors.blue,
+              onPressed: () {
+                onSendMessage(textEditingController.text, 'text');
+              },
             ),
-            color: Colors.blue,
-            onPressed: () {
-              onSendMessage(textEditingController.text, 'text');
-            },
-          ),
-        )
-      ],
+          )
+        ],
+      ),
     );
   }
 
@@ -316,15 +345,112 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Text("Chat"),
         centerTitle: true,
       ),
-      body: Column(
+      body: new Stack(
         children: <Widget>[
-          buidListMessage(),
-          buildTextInput(),
+          _buildEmojiChooser(),
+          new Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: marginBottomForEmojiKeyboard,
+            child: Column(
+              children: <Widget>[
+                buidListMessage(),
+                buildTextInput(),
+              ],
+            ),
+          ),
         ],
       ),
       backgroundColor: Colors.white,
     );
   }
 
-  Widget buildTickets() {}
+  Widget _buildEmojiChooser() {
+    List<Container> containers =
+        new List<Container>.generate(numberOfEmoji(), (int index) {
+      Text textEmoji = new Text(getEmojiByIndex(index),
+          style: new TextStyle(fontSize: 20.0));
+      return new Container(
+          margin: const EdgeInsets.all(2.0),
+          child: Center(
+            child: GestureDetector(
+              onTap: () {
+                _insertEmoji(textEmoji.data);
+              },
+              child: textEmoji,
+            ),
+          ));
+    });
+
+    return new Container(
+      alignment: Alignment.bottomCenter,
+      child: new Container(
+        height: marginBottomForEmojiKeyboard,
+        width: MediaQuery.of(context).size.width,
+        child: new GridView.extent(
+          maxCrossAxisExtent: MediaQuery.of(context).size.width / 7,
+          children: containers,
+        ),
+      ),
+    );
+  }
+
+  _insertEmoji(String emoji) {
+    String textFieldData = textEditingController.text;
+    var cursorOffset = textEditingController.selection;
+    var cursorPosition = cursorOffset.baseOffset;
+    var strWithEmoji;
+
+    if (textFieldData.length > 0) {
+      var tmpStringP1 = textFieldData.substring(0, cursorPosition);
+      var tmpStringP2 = textFieldData.substring(cursorPosition);
+      strWithEmoji = tmpStringP1 + emoji + tmpStringP2;
+    } else {
+      strWithEmoji = emoji;
+    }
+    setState(() {
+      textEditingController = new TextEditingController.fromValue(
+        new TextEditingValue(
+          text: strWithEmoji,
+          selection: new TextSelection.collapsed(
+            offset: cursorPosition + emoji.length,
+          ),
+        ),
+      );
+    });
+  }
+
+  _hideEmojiChooser() {
+    setState(() {
+      marginBottomForEmojiKeyboard = 0;
+    });
+  }
+
+  _toggleEmojiChooser() {
+    setState(() {
+      marginBottomForEmojiKeyboard == 0
+          ? marginBottomForEmojiKeyboard = 200
+          : marginBottomForEmojiKeyboard = 0;
+    });
+    if (isKeyboardShowing) {
+      _hideKeyboard();
+    }
+  }
+
+  _hideKeyboard() {
+    focusNode.unfocus();
+    var cursorPosition = textEditingController.selection.baseOffset;
+    var textFieldData = textEditingController.text;
+    setState(() {
+      textEditingController = new TextEditingController.fromValue(
+        new TextEditingValue(
+          text: textFieldData,
+          selection: new TextSelection.collapsed(
+            offset: cursorPosition,
+          ),
+        ),
+      );
+    });
+  }
 }

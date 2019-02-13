@@ -26,6 +26,7 @@ dev_dependencies:
   cloud_firestore:
   firebase_auth:
   google_sign_in:
+  keyboard_visibility:
   cached_network_image: ^0.5.1
   shared_preferences:
   image_picker: ^0.5.0+3
