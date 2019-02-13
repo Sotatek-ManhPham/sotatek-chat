@@ -1,34 +1,33 @@
 import 'dart:io';
 import 'package:chat_sotatek/emoji/emoticons.dart';
+import 'package:chat_sotatek/src/controller/Controller.dart';
+import 'package:chat_sotatek/src/model/user.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:keyboard_visibility/keyboard_visibility.dart';
 
 var message = '', cursorPosition = 0;
 
 class ChatScreen extends StatefulWidget {
-  final String peerId;
-  final String peerAvatarUrl;
+  final User currentUser;
+  final User peerUser;
 
   ChatScreen({
     Key key,
-    @required this.peerId,
-    @required this.peerAvatarUrl,
+    @required this.currentUser,
+    @required this.peerUser,
   }) : super(key: key);
 
   @override
-  _ChatScreenState createState() => _ChatScreenState(
-        peerId: peerId,
-        peerAvatarUrl: peerAvatarUrl,
-      );
+  _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+
+  Controller controller = Controller.sController;
   final FocusNode focusNode = new FocusNode();
   final String TEXT_MESSAGE_TYPE = 'text';
   final String IMAGE_MESSAGE_TYPE = 'image';
@@ -41,25 +40,14 @@ class _ChatScreenState extends State<ChatScreen> {
     ),
   );
 
-  String peerId;
-  String peerAvatarUrl;
-  String imageUrl;
-  File imageFile;
-
   double marginBottomForEmojiKeyboard = 0;
   bool isKeyboardShowing = false;
 
   _ChatScreenState({
     Key key,
-    @required this.peerId,
-    @required this.peerAvatarUrl,
   });
 
   bool isShowSticker;
-  SharedPreferences prefs;
-  String currentUserId;
-  String groupChatId;
-  String photoUrlCurrentUser;
   var listMessage;
   var keyboardVisibilityNoti, keyboardVisibilityNotiId;
 
@@ -67,7 +55,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     focusNode.addListener(onFocusChange);
-    readLocal();
     keyboardVisibilityNoti = KeyboardVisibilityNotification();
     keyboardVisibilityNotiId =
         keyboardVisibilityNoti.addNewListener(onShow: () {
@@ -92,84 +79,20 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void onSendMessage(String content, String type) {
-    if (content.trim() != '') {
-      textEditingController.clear();
-      var documentCurrentUser = Firestore.instance
-          .collection('messages')
-          .document(groupChatId)
-          .collection('message')
-          .document(DateTime.now().millisecondsSinceEpoch.toString());
-
-      String groundChatPeerId = '$peerId-$currentUserId';
-
-      var documentPeer = Firestore.instance
-          .collection('messages')
-          .document(groundChatPeerId)
-          .collection('message')
-          .document(DateTime.now().millisecondsSinceEpoch.toString());
-
-      Firestore.instance.runTransaction((transaction) async {
-        await transaction.set(documentCurrentUser, {
-          'content': content,
-          'idFrom': currentUserId,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'type': type
-        });
-      });
-
-      Firestore.instance.runTransaction((transaction) async {
-        await transaction.set(documentPeer, {
-          'content': content,
-          'idFrom': currentUserId,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'type': type
-        });
-      });
-    }
-  }
-
-  void readLocal() async {
-    prefs = await SharedPreferences.getInstance();
-    currentUserId = prefs.getString('id');
-    photoUrlCurrentUser = prefs.getString('photoUrl') ?? '';
-    groupChatId = '$currentUserId-$peerId';
-    setState(() {});
-  }
-
-  Future getImage(ImageSource imageSource) async {
-    imageFile = await ImagePicker.pickImage(source: imageSource);
+  Future uploadImage(ImageSource imageSource) async {
+    File imageFile = await ImagePicker.pickImage(source: imageSource);
     if (imageFile != null) {
-      uploadFile();
+      controller.uploadImage(imageFile, IMAGE_MESSAGE_TYPE, widget.currentUser, widget.peerUser);
     }
-  }
-
-  Future uploadFile() async {
-    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
-    StorageUploadTask uploadTask = reference.putFile(imageFile);
-    StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
-    storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
-      imageUrl = downloadUrl;
-      setState(() {
-        onSendMessage(imageUrl, IMAGE_MESSAGE_TYPE);
-      });
-    });
   }
 
   Widget buidListMessage() {
+    String groupChatId = '${widget.currentUser.id}-${widget.peerUser.id}';
     return Flexible(
         child: groupChatId == ''
             ? Center(child: CircularProgressIndicator())
             : StreamBuilder(
-                stream: Firestore.instance
-                    .collection('messages')
-                    .document(groupChatId)
-                    .collection('message')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
+                stream: controller.getSnapshotsMessage(groupChatId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return Center(
@@ -190,7 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget buildItem(int index, DocumentSnapshot document) {
-    if (document['idFrom'] == currentUserId) {
+    if (document['idFrom'] == widget.currentUser.id) {
       return Row(
         children: <Widget>[
           document['type'] == TEXT_MESSAGE_TYPE
@@ -219,7 +142,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
           Material(
             child: CachedNetworkImage(
-              imageUrl: photoUrlCurrentUser,
+              imageUrl: widget.currentUser.avatarUrl,
               width: 24,
               height: 24,
             ),
@@ -234,7 +157,7 @@ class _ChatScreenState extends State<ChatScreen> {
         children: <Widget>[
           Material(
             child: CachedNetworkImage(
-              imageUrl: peerAvatarUrl,
+              imageUrl: widget.peerUser.avatarUrl,
               width: 24,
               height: 24,
             ),
@@ -282,7 +205,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.blue,
                 ),
                 onPressed: () {
-                  getImage(ImageSource.camera);
+                  uploadImage(ImageSource.camera);
                 }),
           ),
           Container(
@@ -292,7 +215,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: Colors.blue,
                 ),
                 onPressed: () {
-                  getImage(ImageSource.gallery);
+                  uploadImage(ImageSource.gallery);
                 }),
           ),
           Flexible(
@@ -329,7 +252,8 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               color: Colors.blue,
               onPressed: () {
-                onSendMessage(textEditingController.text, 'text');
+                controller.saveMessage(textEditingController.text, 'text', widget.currentUser, widget.peerUser);
+                textEditingController.clear();
               },
             ),
           )
