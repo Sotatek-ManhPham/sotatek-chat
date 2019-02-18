@@ -1,29 +1,26 @@
-import 'package:chat_sotatek/search_screen.dart';
+import 'package:chat_sotatek/src/controller/Controller.dart';
+import 'package:chat_sotatek/src/model/user.dart';
+import 'package:chat_sotatek/src/screen/search_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:chat_sotatek/chat_screen.dart';
-import 'package:chat_sotatek/login_screen.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:chat_sotatek/src/screen/chat_screen.dart';
+import 'package:chat_sotatek/src/screen/login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final String currentUserId;
+  final User currentUser;
 
-  HomeScreen({Key key, @required this.currentUserId}) : super(key: key);
+  HomeScreen({Key key, @required this.currentUser}) : super(key: key);
 
   @override
   _HomeScreenState createState() {
-    return _HomeScreenState(currentUserId: currentUserId);
+    return _HomeScreenState();
   }
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final String currentUserId;
-  final GoogleSignIn googleSignIn = GoogleSignIn();
+  Controller controller = Controller.sController;
 
-  _HomeScreenState({Key key, this.currentUserId});
+  _HomeScreenState({Key key});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             body: StreamBuilder(
-              stream: Firestore.instance.collection('users').snapshots(),
+              stream: controller.getSnapshotsUser(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return Center(
@@ -65,17 +62,15 @@ class _HomeScreenState extends State<HomeScreen> {
             )));
   }
 
-  Future _handleSignout() async {
-    await FirebaseAuth.instance.signOut();
-    await googleSignIn.disconnect();
-    await googleSignIn.signOut();
+  void _handleSignout() {
+    controller.signOut();
     Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => LoginScreen()),
             (Route<dynamic> route) => false);
   }
 
   Widget buildItem(BuildContext context, document) {
-    if (document['id'] == currentUserId) {
+    if (document['id'] == widget.currentUser.id) {
       return Container();
     } else {
       return ListTile(
@@ -92,17 +87,19 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text(document['nickname']),
         subtitle: Text('You: Happy new year'),
         onTap: () {
-          _showChat(document.documentID, document['photoUrl']);
+          User user = User(id: document.documentID, avatarUrl: document['photoUrl'], nickName: document['nickname']);
+          _showChat(user);
         },
       );
     }
   }
 
-  _showChat(String peerId, String avatarUrl) {
+  _showChat(User user) {
+
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) =>
-                ChatScreen(peerId: peerId, peerAvatarUrl: avatarUrl)));
+                ChatScreen(peerUser: user, currentUser: widget.currentUser)));
   }
 }
