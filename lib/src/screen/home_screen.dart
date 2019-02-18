@@ -1,3 +1,4 @@
+import 'package:chat_sotatek/localizations.dart';
 import 'package:chat_sotatek/src/controller/Controller.dart';
 import 'package:chat_sotatek/src/model/user.dart';
 import 'package:chat_sotatek/src/screen/search_screen.dart';
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
         debugShowCheckedModeBanner: false,
         home: Scaffold(
             appBar: AppBar(
-              title: Text("Home"),
+              title: Text(AppLocalizations.of(context).titleHome),
               centerTitle: true,
               actions: <Widget>[
                 IconButton(

@@ -1,3 +1,4 @@
+import 'package:chat_sotatek/localizations.dart';
 import 'package:chat_sotatek/src/controller/Controller.dart';
 import 'package:chat_sotatek/src/model/user.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class _LoginPageState extends State<LoginScreen> {
     return Scaffold(
         appBar: AppBar(
             title: Center(
-          child: Text('Login Page'),
+          child: Text(AppLocalizations.of(context).textLoginButtonGoogle),
         )),
         body: Stack(
           children: <Widget>[

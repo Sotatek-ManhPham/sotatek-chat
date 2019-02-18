@@ -1,0 +1,19 @@
+{
+  "@@last_modified": "2019-02-18T17:39:36.169802",
+  "titleHome": "Home",
+  "@titleHome": {
+    "description": "The home title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "textLoginButtonGoogle": "Sign in with Google",
+  "@textLoginButtonGoogle": {
+    "type": "text",
+    "placeholders": {}
+  },
+  "searchPlaceHolder": "Search",
+  "@searchPlaceHolder": {
+    "type": "text",
+    "placeholders": {}
+  }
+}
