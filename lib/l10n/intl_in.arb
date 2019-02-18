@@ -1,0 +1,19 @@
+{
+  "@@last_modified": "2019-02-18T17:39:36.169802",
+  "titleHome": "Trang chủ",
+  "@titleHome": {
+    "description": "The home title",
+    "type": "text",
+    "placeholders": {}
+  },
+  "textLoginButtonGoogle": "Đăng nhập bằng Google",
+  "@textLoginButtonGoogle": {
+    "type": "text",
+    "placeholders": {}
+  },
+  "searchPlaceHolder": "Tìm kiếm",
+  "@searchPlaceHolder": {
+    "type": "text",
+    "placeholders": {}
+  }
+}
